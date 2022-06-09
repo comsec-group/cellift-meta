@@ -1,0 +1,12 @@
+tools/log/*.log
+generated/*.tex
+generated/*.txt
+generated/*.log
+generated/*.png
+experimental-data/*
+*.pyc
+*.log
+*.png
+*.pdf
+__pycache__
+.vscode

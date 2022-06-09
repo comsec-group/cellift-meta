@@ -1,0 +1,5 @@
+# Base this on a very particular debian base image
+FROM registry.ethz.ch/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-base-main
+COPY . /cellift-meta
+WORKDIR /cellift-meta
+RUN sh installtools.sh

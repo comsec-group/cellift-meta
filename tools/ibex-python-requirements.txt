@@ -1,0 +1,20 @@
+# copied from ibex requirements
+Pallets-Sphinx-Themes
+PyYAML
+Sphinx
+bitstring
+flake8
+git+https://github.com/lowRISC/edalize.git@ot
+git+https://github.com/lowRISC/fusesoc.git@ot
+hjson
+mako
+mistletoe>=0.7.2
+pandas
+premailer
+pyvsc
+pyyaml
+rst2pdf
+sphinx-issues
+sphinx_rtd_theme
+sphinxcontrib-log-cabinet
+tabulate

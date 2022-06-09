@@ -1,0 +1,30 @@
+[submodule "tools/sv2v"]
+	path = tools/sv2v
+	url = https://github.com/zachjs/sv2v.git
+[submodule "tools/verilator"]
+	path = tools/verilator
+	url = https://github.com/verilator/verilator
+[submodule "tools/morty"]
+	path = tools/morty
+	url = https://github.com/zarubaf/morty
+[submodule "tools/bender"]
+	path = tools/bender
+	url = https://github.com/pulp-platform/bender
+[submodule "tools/gtkwave"]
+	path = tools/gtkwave
+	url = https://github.com/gtkwave/gtkwave.git
+[submodule "cellift-ubenchmarks"]
+	path = cellift-ubenchmarks
+	url = ../cellift-ubenchmarks.git
+[submodule "tools/riscv-gnu-toolchain"]
+	path = tools/riscv-gnu-toolchain
+	url = https://github.com/riscv/riscv-gnu-toolchain
+[submodule "tools/riscv-isa-sim"]
+	path = tools/riscv-isa-sim
+	url = https://github.com/riscv-software-src/riscv-isa-sim
+[submodule "external-dependencies/cellift-opentitan"]
+	path = external-dependencies/cellift-opentitan
+	url = https://github.com/comsec-group/cellift-opentitan.git
+[submodule "tools/cellift-yosys"]
+	path = tools/cellift-yosys
+	url = https://github.com/comsec-group/cellift-yosys.git

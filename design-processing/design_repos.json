@@ -1,0 +1,7 @@
+{
+    "cva6": "../../cellift-designs/cellift-cva6/cellift",
+    "ibex": "../../cellift-designs/cellift-ibex/cellift",
+    "pulpissimo": "../../cellift-designs/cellift-pulpissimo-hdac-2018/cellift",
+    "rocket": "../../cellift-designs/cellift-chipyard/cellift-rocket",
+    "boom": "../../cellift-designs/cellift-chipyard/cellift-boom"
+}

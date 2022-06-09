@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Copyright 2022 Flavien Solt, ETH Zurich.
+# Licensed under the General Public License, Version 3.0, see LICENSE for details.
+# SPDX-License-Identifier: GPL-3.0-only
+
+if [ "$CELLIFT_ENV_SOURCED" != yes -o "$PREFIX_CELLIFT" = "" ]
+then
+    echo "resourcewrapper: env.sh not sourced? don't see PREFIX_CELLIFT and CELLIFT_ENV_SOURCED variables."
+    exit 1
+fi
+
+# where are we executing from? make relative path absolute if needed
+mydir=$(realpath $(dirname $0))
+
+if [ "$#" -lt 4 ]
+then
+    echo "resourcewrapper: usage: $0 table row col <cmdline>"
+    exit 1
+fi
+
+tablename="$1" # Top grouping of data, e.g. "memory_usage"
+shift
+rowname="$1" # Next grouping of data, e.g. "cellift," "glift," "glift plus"
+shift
+colname="$1" # Lowest grouping of data, e.g. "instrumentation," "synthesis," "execution."
+shift
+
+if [ "$LOGRESOURCES" != yes ]
+then
+    # If LOGRESOURCES is not explicitly defined, execute the original command without
+    # recording resources. This is to avoid overwriting the output files all the time
+    # causing git noise. We only need to do this once, in principle, anyway.
+    echo "resourcewrapper (no log): Executing vanilla" "$@"
+    exec "$@"
+
+    # Should never be reached because exec replaces the script afaik
+    echo "NOT REACHED"
+    exit 1
+fi
+
+# LOGRESOURCES is defined, so we execute the desired cmdline with metadata.
+# This will execute the cmdline, do resource monitoring, and write
+# resource information in a filename parametrized with the desired metadata.
+echo "resourcewrapper (log): Executing" "$@" "for table $tablename, row $rowname, column $colname."
+
+# Allow for this shellscript to be executed from anywhere - invoke our own
+# python and our own script from the dir this script is in. We also tell
+# the python script the data dir.
+mkdir -p $CELLIFT_DATADIR/resources
+mkdir -p $CELLIFT_DATADIR/resources_output
+$PREFIX_CELLIFT/python-venv/bin/python $CELLIFT_DESIGN_PROCESSING_ROOT/resources-record/resourcesrecord.py $tablename $rowname $colname $CELLIFT_DATADIR/resources $CELLIFT_DATADIR/resources_output "$@"
