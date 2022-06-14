@@ -10,7 +10,7 @@ CARGOEXEC=$(CARGO_HOME)/bin/cargo
 
 LOGFILES=log
 
-installtools: install_gcc install_rust install_morty install_bender install_fusesoc install_toolchain install_verilator install_sv2v install_cellift_python install_yosys install_spike install_gtkwave
+installtools: install_gcc install_rust install_morty install_bender install_fusesoc install_toolchain install_verilator install_sv2v install_cellift_python install_yosys install_spike 
 
 install_gtkwave:
 	# this one is not in the installtools list

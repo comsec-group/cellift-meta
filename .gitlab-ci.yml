@@ -1,0 +1,26 @@
+before_script:
+  - docker info
+
+build_tools_image:
+  variables:
+    IMAGE_TAG: docker.io/ethcomsec/cellift:cellift-tools-main
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+    - ls
+    - echo building $IMAGE_TAG
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -f Dockerfile-tools -t $IMAGE_TAG .
+    - docker run -t $IMAGE_TAG bash -c "cd tests && bash tests.sh"
+    - docker push $IMAGE_TAG
+  tags:
+    - ben
+  only:
+    changes:
+      - tools/**/*
+      - Dockerfile-tools
+      - docker/*
+      - tests/**/*
+      - env.sh
+      - installtools.sh
+      - python-experiments/ite/requirements.txt
+

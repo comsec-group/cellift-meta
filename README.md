@@ -26,22 +26,20 @@ There are two alternatives: using a Docker image, or installing the tools locall
 
 For an explanation of Docker and how CellIFT uses it, see README-Docker.txt.
 
-There are a number of images that are available on the ETH container registry.
+There are a number of images that are available on the Dockerhub container registry.
 
 1. Tools (all CellIFT itself and its version-controlled dependencies):
-   `tag: registry.ethz.ch/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main`
-   To use:
 ```
-   $ docker pull registry.ethz.ch/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main
-   $ docker run -it registry.ethz.ch/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main bash
+   $ docker pull docker.io/ethcomsec/cellift:cellift-tools-main
+   $ docker run -it docker.io/ethcomsec/cellift:cellift-tools-main bash
 ```
-   CellIFT tools sources will be in /cellift-meta., and the binaries in /root/prefix-cellift/.
+   CellIFT tools sources will be in /cellift-meta, and the binaries in /root/prefix-cellift/.
 2. Ibex design (Tools + source code with CellIFT instrumentation infrastructure):
-   `tag: registry.ethz.ch/comsec/hardware-information-flow-tracking/designs/ibex:cellift-ibex-master`
+   `tag: docker.io/ethcomsec/cellift-ibex:cellift-ibex-master`
    To use:
 ```
-   $ docker pull registry.ethz.ch/comsec/hardware-information-flow-tracking/designs/ibex:cellift-ibex-master
-   $ docker run -it registry.ethz.ch/comsec/hardware-information-flow-tracking/designs/ibex:cellift-ibex-master bash
+   $ docker pull docker.io/ethcomsec/cellift-ibex:cellift-ibex-master
+   $ docker run -it docker.io/ethcomsec/cellift-ibex:cellift-ibex-master bash
 ```
    CellIFT tools sources are again in `/cellift-meta`, binaries in `/root/prefix-cellift`, and the Ibex design sources
    in `/cellift-designs/ibex/`, cellift-specific dir is `/cellift-designs/ibex/cellift`.
@@ -62,14 +60,12 @@ First, get the repository and its submodules.
 This may take a while.
 
 ```bash
-git clone --recurse-submodules -j8 git@gitlab.ethz.ch:comsec/hardware-information-flow-tracking/cellift-meta.git
+git clone --recurse-submodules -j8 https://github.com/comsec-group/cellift-meta.git
 cd cellift-meta
 ```
 
 The -j8 indicates fetching up to 8 repo's in parallel.  This is a fairly
 heavyweight operation because it includes the toolchain repo's.
-If you cloned without `--recurse-submodules`, do this to get the contents:
-`make pull`
 
 Second, install the prerequisites with `apt` following the `apt` lines of `docker/Dockerfile-base`.
 
@@ -103,10 +99,10 @@ Fifth, to get all the design repositories next to the cellift-meta to obtain suc
 cd ..
 mkdir cellift-designs
 cd cellift-designs
-git clone cellift-ibex
-git clone cellift-pulpissimo-hdac-2018
-git clone cellift-chipyard
-git clone cellift-cva6 --recursive
+git clone https://github.com/comsec-group/cellift-ibex.git
+git clone https://github.com/comsec-group/cellift-pulpissimo-hdac-2018.git
+git clone https://github.com/comsec-group/cellift-chipyard.git
+git clone https://github.com/comsec-group/cellift-cva6.git --recursive
 ```
 
 ## Repository hierarchy

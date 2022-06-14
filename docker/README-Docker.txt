@@ -31,6 +31,6 @@ Finally, we create a image which contains the CellIFT tools in the prefix.
 How do I use the CellIFT tools image: The tools image that is automatically
 built by the CellIFT ETH Gitlab CI is stored in the ETH Gitlab container
 registry. To retrieve and run it:
-$ docker login registry.ethz.ch
-$ docker pull registry.ethz.ch/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main
-$ docker run -it registry.ethz.ch/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main
+$ docker login registry-1.docker.io
+$ docker pull registry-1.docker.io/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main
+$ docker run -it registry-1.docker.io/comsec/hardware-information-flow-tracking/cellift-meta:cellift-tools-main

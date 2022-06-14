@@ -73,9 +73,7 @@ for design_to_exclude in set(exclude_designs):
 # These pairs are to be used in a later stage of the multiprocessing pool.
 design_instrumentation_pairs = []
 for design_name in design_names:
-    instrumentation_methods = ["vanilla", "passthrough", "cellift"]
-    if design_name in ["ibex", "rocket", "pulpissimo"]:
-        instrumentation_methods.append("glift")
+    instrumentation_methods = ["vanilla", "passthrough", "cellift", "glift"]
     design_instrumentation_pairs += [(design_name, im) for im in instrumentation_methods]
 
 #####

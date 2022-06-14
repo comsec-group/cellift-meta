@@ -92,3 +92,9 @@ mkdir -p $MPLCONFIGDIR
 # Make configuration usable; prioritize our tools
 PATH=$PREFIX_CELLIFT/bin:$CARGO_HOME/bin:$PREFIX_CELLIFT/python-venv/bin/:$PATH
 PATH=$PREFIX_CELLIFT/riscv/bin:$PATH
+
+
+
+# Example customization
+export CELLIFT_JOBS=8
+ulimit -n 10000 # many FD's

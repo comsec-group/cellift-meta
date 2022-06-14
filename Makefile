@@ -24,7 +24,6 @@ default-target:
 	@echo "    make pull            - do git pull for current repo and update submodules"
 
 pull:
-	git pull
 	git submodule update --jobs $(CELLIFT_JOBS) --init --recursive
 
 clean-designs:
