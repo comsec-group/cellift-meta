@@ -34,6 +34,7 @@ There are a number of images that are available on the Dockerhub container regis
    $ docker run -it docker.io/ethcomsec/cellift:cellift-tools-main bash
 ```
    CellIFT tools sources will be in /cellift-meta, and the binaries in /root/prefix-cellift/.
+
 2. Ibex design (Tools + source code with CellIFT instrumentation infrastructure):
    `tag: docker.io/ethcomsec/cellift-ibex:cellift-ibex-master`
    To use:
@@ -51,6 +52,15 @@ There are a number of images that are available on the Dockerhub container regis
      make: Entering directory '/cellift-meta/benchmarks/benchmarks'
 ```
    This will build vanilla and cellift modes, each in trace and notrace modes, and execute them, loading a certain benchmark binary (see tests.sh for details), i.e. all 4 combinations.
+
+3. Pulpissimo HDAC design:
+   `tag: docker.io/ethcomsec/cellift-pulpissimo-hdac-2018:cellift-pulpissimo-hdac-2018-master`
+   To use:
+```
+   $ docker pull docker.io/ethcomsec/cellift-pulpissimo-hdac-2018:cellift-pulpissimo-hdac-2018-master
+   $ docker run -it docker.io/ethcomsec/cellift-pulpissimo-hdac-2018:cellift-pulpissimo-hdac-2018-master bash
+```
+
 
 See `docker/README-Docker.txt`.
 
