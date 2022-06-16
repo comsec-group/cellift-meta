@@ -59,6 +59,16 @@ There are a number of images that are available on the Dockerhub container regis
 ```
    $ docker pull docker.io/ethcomsec/cellift-pulpissimo-hdac-2018:cellift-pulpissimo-hdac-2018-master
    $ docker run -it docker.io/ethcomsec/cellift-pulpissimo-hdac-2018:cellift-pulpissimo-hdac-2018-master bash
+   # bash tests.sh
+```
+
+4. CVA6 design:
+   `tag: docker.io/ethcomsec/cellift-cva6:cellift-cva6-master`
+   To use:
+```
+   $ docker pull docker.io/ethcomsec/cellift-cva6:cellift-cva6-master
+   $ docker run -it docker.io/ethcomsec/cellift-cva6:cellift-cva6-master bash
+   # bash tests.sh
 ```
 
 
