@@ -71,6 +71,23 @@ There are a number of images that are available on the Dockerhub container regis
    # bash tests.sh
 ```
 
+5. boom design:
+   `tag: docker.io/ethcomsec/cellift-chipyard-boom:cellift-boom-master`
+   To use:
+```
+   $ docker pull docker.io/ethcomsec/cellift-chipyard-boom:cellift-boom-master
+   $ docker run -it docker.io/ethcomsec/cellift-chipyard-boom:cellift-boom-master bash
+   # bash tests.sh
+```
+
+6. rocket design:
+   `tag: docker.io/ethcomsec/cellift-chipyard-rocket:cellift-rocket-master`
+   To use:
+```
+   $ docker pull docker.io/ethcomsec/cellift-chipyard-rocket:cellift-rocket-master
+   $ docker run -it docker.io/ethcomsec/cellift-chipyard-rocket:cellift-rocket-master bash
+   # bash tests.sh
+```
 
 See `docker/README-Docker.txt`.
 
