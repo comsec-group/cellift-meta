@@ -40,7 +40,7 @@ class InstrumentationPerformancePlot(luigi.Task):
         self.experiment_name = "perfinstr-plot-{}".format(self.simulator)
 
     def output(self):
-        return luigi.LocalTarget('{}/results/{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
+        return luigi.LocalTarget('{}/{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
 
     def requires(self):
         run_params = {
@@ -140,6 +140,12 @@ class InstrumentationPerformancePlot(luigi.Task):
         all_axes[0].set_ylim([192, 196])
         all_axes[-1].set_ylim([0, 90])
 
+        def get_glift(d):
+            if InstrumentationMethod.GLIFT in d:
+                return d[InstrumentationMethod.GLIFT]
+            else:
+                return 200
+
         # Remove axes between the two subplots.
         all_axes[0].spines['bottom'].set_visible(False)
         if len(all_axes) > 2:
@@ -178,7 +184,7 @@ class InstrumentationPerformancePlot(luigi.Task):
         if PLOT_PASSTHROUGH:
             rects_passthrough_yosys_y = [plot_data['yosys'][d][InstrumentationMethod.PASSTHROUGH] for d in design_names]
         rects_cellift_yosys_y     = [plot_data['yosys'][d][InstrumentationMethod.CELLIFT]     for d in design_names]
-        rects_glift_yosys_y       = [plot_data['yosys'][d][InstrumentationMethod.GLIFT]       for d in design_names]
+        rects_glift_yosys_y       = [get_glift(plot_data['yosys'][d])       for d in design_names]
         # Order is wrhong in this line. rects_glift_yosys_y_restrained_to_synthesizable = [plot_data['yosys']['ibex'][InstrumentationMethod.GLIFT], plot_data['yosys']['pulpissimo'][InstrumentationMethod.GLIFT], plot_data['yosys']['rocket'][InstrumentationMethod.GLIFT]]
 
         # Data heights (verilator)
@@ -188,7 +194,9 @@ class InstrumentationPerformancePlot(luigi.Task):
         rects_cellift_verilator_y     = [plot_data['verilator'][d][InstrumentationMethod.CELLIFT]     for d in design_names]
         rects_glift_verilator_y       = [plot_data['verilator']['ibex'][InstrumentationMethod.GLIFT], plot_data['verilator']['rocket'][InstrumentationMethod.GLIFT], plot_data['verilator']['pulpissimo'][InstrumentationMethod.GLIFT], 100, 1000]
 
+        print('yosys y')
         pp.pprint(rects_glift_yosys_y)
+        print('verilator y')
         pp.pprint(rects_glift_verilator_y)
 
         # Rectangles (yosys).
@@ -209,8 +217,10 @@ class InstrumentationPerformancePlot(luigi.Task):
             # Do the coloring manually with glift.
             for design_id, design_name in enumerate(design_names):
                 if design_name in ["cva6", "boom"]:
+                    print('red glift because design name is %s' % design_name)
                     curr_color = "red"
                 else:
+                    print('regular glift because design name is %s' % design_name)
                     curr_color=rectangle_colors[InstrumentationMethod.GLIFT]
                 each_ax.bar(rects_glift_verilator_x[design_id], rects_glift_verilator_y[design_id], width, alpha=1, zorder=3, color=curr_color, ec='black', hatch="///", bottom=rects_glift_yosys_y[design_id])
 
@@ -236,5 +246,4 @@ class InstrumentationPerformancePlot(luigi.Task):
     
         fig.tight_layout()
 
-        plt.savefig("perfinstrum.png", dpi=300)
-        plt.savefig("perfinstrum.pdf", dpi=300)
+        plt.savefig(self.output().path, dpi=300)

@@ -22,9 +22,12 @@ if __name__ == '__main__':
         raise Exception("The CellIFT environment must be sourced prior to running the Python recipes.")
 
     SIMULATOR = Simulator.VERILATOR
-    MAX_SIM_CYCLES = 1000000000 # This value allows for shorter experiments. Set to a lower value to cap the experiment duration.
+    MAX_SIM_CYCLES = 10 # This value allows for shorter experiments. Set to a lower value to cap the experiment duration.
 
-    luigi.build([PerformancePlot(simulator=SIMULATOR, simtime=MAX_SIM_CYCLES)], workers=num_workers, local_scheduler=True, log_level='INFO')
+    jobs = [PerformancePlot(simulator=SIMULATOR, simtime=MAX_SIM_CYCLES)]
+    luigi.build(jobs, workers=num_workers, local_scheduler=True, log_level='INFO')
+    for j in jobs:
+        print('%s' % j.output().path)
 
 else:
     raise Exception("This module must be at the toplevel.")

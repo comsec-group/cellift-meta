@@ -42,7 +42,7 @@ class PerformancePlot(luigi.Task):
         self.experiment_name = "perfbenchmark-plot-{}-{}".format(self.simulator, self.simtime)
 
     def output(self):
-        return luigi.LocalTarget('{}/results/{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
+        return luigi.LocalTarget('{}/perf-slowdowns-{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
 
     def requires(self):
         run_params = {
@@ -201,5 +201,4 @@ class PerformancePlot(luigi.Task):
 
         print("rects_glift_y", rects_glift_y)
 
-        plt.savefig("slowdowns.png", dpi=300)
-        plt.savefig("slowdowns.pdf", dpi=300)
+        plt.savefig(self.output().path, dpi=300)

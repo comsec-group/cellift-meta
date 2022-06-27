@@ -65,10 +65,12 @@ def get_instrumentation_methods_per_design_yosys(design_name):
     assert design_name in ["ibex", "cva6", "pulpissimo", "rocket", "boom"]
     instrumentation_methods = [
         InstrumentationMethod.VANILLA,
-        InstrumentationMethod.PASSTHROUGH,
+#        InstrumentationMethod.PASSTHROUGH,
         InstrumentationMethod.CELLIFT,
-        InstrumentationMethod.GLIFT
     ]
+    # Only some designs  GLIFT target.
+    if design_name in ["ibex", "pulpissimo", "rocket"]:
+        instrumentation_methods.append(InstrumentationMethod.GLIFT)
     return instrumentation_methods
 
 # Returns the list of supported instrumentation methods supported by the given design for synthesis.
@@ -76,7 +78,7 @@ def get_instrumentation_methods_per_design_verilator(design_name):
     assert design_name in ["ibex", "cva6", "pulpissimo", "rocket", "boom"]
     instrumentation_methods = [
         InstrumentationMethod.VANILLA,
-        InstrumentationMethod.PASSTHROUGH,
+#        InstrumentationMethod.PASSTHROUGH,
         InstrumentationMethod.CELLIFT,
     ]
     # Only some designs  GLIFT target.

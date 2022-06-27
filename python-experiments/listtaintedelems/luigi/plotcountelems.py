@@ -32,13 +32,16 @@ class PlotCountElems(luigi.Task):
     simtime          = luigi.IntParameter()
     design_name      = luigi.Parameter()
     instrumentation  = luigi.ListParameter()
+    minx             = luigi.IntParameter()
+    maxx             = luigi.IntParameter()
+    expname          = luigi.Parameter()
 
     def __init__(self, *args, **kwargs):
         super(PlotCountElems, self).__init__(*args, **kwargs)
         self.experiment_name = "plotcountelems-{}-{}-{}-{}-{}-{}".format(self.simulator, taintstr(self.taintbits), binarycrc(self.binary), self.simtime, self.design_name, self.instrumentation)
 
     def output(self):
-        return luigi.LocalTarget('{}/experiments/{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
+        return luigi.LocalTarget('{}/experiments/{}-{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name, self.expname), format=luigi.format.Nop)
 
     def requires(self):
         return [CountElems(
@@ -60,7 +63,8 @@ class PlotCountElems(luigi.Task):
         json_data = [json.load(x.open()) for x in self.input()][0]
 
         # For Meltdown
-        minx, maxx = 1000, 1700
+        # minx, maxx = 1000, 1700
+        minx, maxx = self.minx, self.maxx
         # For Spectre
         # minx, maxx = 400, 750
 
@@ -73,8 +77,9 @@ class PlotCountElems(luigi.Task):
         plt.plot(X, Y)
         plt.xlabel("Clock cycle")
         plt.ylabel("Num. tainted bits")
+        plt.ylim(0,400)
 
         plt.tight_layout()
-        plt.savefig("meltdown_{}.png".format(self.design_name), dpi=300)
-        plt.savefig("meltdown_{}.pdf".format(self.design_name), dpi=300)
+        plt.savefig(self.output().path, dpi=300)
+#        plt.savefig("meltdown_{}.pdf".format(self.design_name), dpi=300)
     

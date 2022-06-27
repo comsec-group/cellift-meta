@@ -16,7 +16,10 @@ if __name__ == '__main__':
 
     SIMULATOR = Simulator.VERILATOR
 
-    luigi.build([RSSPlot(simulator=SIMULATOR)], workers=1, local_scheduler=True, log_level='INFO')
+    jobs=[RSSPlot(simulator=SIMULATOR)]
+    luigi.build(jobs, workers=1, local_scheduler=True, log_level='INFO')
+    for j in jobs:
+        print('%s' % j.output().path)
 
 else:
     raise Exception("This module must be at the toplevel.")

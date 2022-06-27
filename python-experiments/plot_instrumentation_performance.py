@@ -21,7 +21,11 @@ if __name__ == '__main__':
 
     SIMULATOR = Simulator.VERILATOR
 
-    luigi.build([InstrumentationPerformancePlot(simulator=SIMULATOR)], workers=num_workers, local_scheduler=True, log_level='INFO')
+    jobs=[InstrumentationPerformancePlot(simulator=SIMULATOR)]
+    luigi.build(jobs, workers=num_workers, local_scheduler=True, log_level='INFO')
+
+    for j in jobs:
+       print('out: %s' % j.output().path)
 
 else:
     raise Exception("This module must be at the toplevel.")

@@ -41,7 +41,7 @@ class RSSPlot(luigi.Task):
         self.experiment_name = "perfbenchmark-plot-{}".format(self.simulator)
 
     def output(self):
-        return luigi.LocalTarget('{}/results/{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
+        return luigi.LocalTarget('{}/rss-{}.png'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
 
     def requires(self):
         run_params = {
@@ -190,11 +190,16 @@ class RSSPlot(luigi.Task):
             rects_cellift_verilator_x     = [xticks_verilator[0]+0.0*width] + [xticks_verilator[1]+0.0*width] + [xticks_verilator[2]+0.0*width] + [xticks_verilator[3]+0.5*width] + [xticks_verilator[4]+0.5*width]
             rects_glift_verilator_x       = [xticks_verilator[0]+1.0*width] + [xticks_verilator[1]+1.0*width] + [xticks_verilator[2]+1.0*width]
 
+        def get_glift(d):
+            if InstrumentationMethod.GLIFT in d:
+                    return d[InstrumentationMethod.GLIFT]
+            return 0
+
         # Data heights
         if PLOT_PASSTHROUGH:
             rects_passthrough_yosys_y = [plot_data['yosys'][d][InstrumentationMethod.PASSTHROUGH] for d in design_names]
         rects_cellift_yosys_y     = [plot_data['yosys'][d][InstrumentationMethod.CELLIFT]     for d in design_names]
-        rects_glift_yosys_y       = [plot_data['yosys'][d][InstrumentationMethod.GLIFT]       for d in design_names]
+        rects_glift_yosys_y       = [get_glift(plot_data['yosys'][d])       for d in design_names]
 
         rects_vanilla_verilator_y     = [plot_data['verilator'][d][InstrumentationMethod.VANILLA] for d in design_names]
         if PLOT_PASSTHROUGH:
@@ -246,5 +251,4 @@ class RSSPlot(luigi.Task):
         plt.subplots_adjust(wspace=0, hspace=0)
         fig.tight_layout()
 
-        plt.savefig("rss.png", dpi=300)
-        plt.savefig("rss.pdf", dpi=300)
+        plt.savefig(self.output().path, dpi=300)

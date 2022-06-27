@@ -12,10 +12,11 @@ def get_design_names():
     ]
 
 def get_design_numcycles(design_name):
-    {
+    d2n = {
         "ibex": 40000000,
         "rocket": 40000,
         "pulpissimo": 200000,
         "cva6": 40000,
         "boom": 40000
-    }[design_name]
+    }
+    return d2n[design_name]
