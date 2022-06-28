@@ -47,8 +47,8 @@ install_cellift_python: $(CELLIFT_PYTHON_VENV)
 	)  >$(LOGFILES)/cellift-python.log 2>&1
 
 $(RUSTEXEC):
-	( CARGO_HOME=$(CARGO_HOME) RUSTUP_HOME=$(RUSTUP_HOME) ./rustup-init -y --default-toolchain 1.55.0 ) >$(LOGFILES)/rust.log 2>&1
-	$(RUSTUPEXEC) install 1.55.0 >$(LOGFILES)/rustup.log 2>&1
+	( CARGO_HOME=$(CARGO_HOME) RUSTUP_HOME=$(RUSTUP_HOME) ./rustup-init -y --default-toolchain 1.61.0 ) >$(LOGFILES)/rust.log 2>&1
+	$(RUSTUPEXEC) install 1.61.0 >$(LOGFILES)/rustup.log 2>&1
 
 install_morty: $(RUSTEXEC)
 	$(CARGOEXEC) install --path morty --root $(PREFIX_CELLIFT) >$(LOGFILES)/morty.log 2>&1
