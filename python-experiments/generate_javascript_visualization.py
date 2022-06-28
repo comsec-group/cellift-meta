@@ -11,7 +11,7 @@ import luigi
 import multiprocessing
 import os
 
-from listtaintedelems.luigi.plotcountelems import PlotCountElems
+from listtaintedelems.luigi.signals_matrix_list import SignalsMatrixListJSON
 
 from common.enums import Simulator, InstrumentationMethod
 from common.designcfgs import get_design_cellift_path
@@ -23,9 +23,9 @@ process_division_factor = 4
 if __name__ == '__main__':
   jobs=[]
   for scenario_name in ["scenario_1_load_tainted_data_forbidden",
-          "scenario_1_load_tainted_data_ok",
-          "boom_attacks_v1",
-          "boom_attacks_v1_nofdiv",
+#          "scenario_1_load_tainted_data_ok",
+#          "boom_attacks_v1",
+#          "boom_attacks_v1_nofdiv",
           ]:
     num_workers = (multiprocessing.cpu_count()+process_division_factor)//process_division_factor
 
@@ -37,7 +37,6 @@ if __name__ == '__main__':
     # 2000 is useful for MDS analysis, and 5000 for Meltdown analysis. This number must be larger than the upper bound of the window given in `listtaintedelems/luigi/plotcountelems.py`.
     if 'load_tainted' in scenario_name:
         simtime = 5000 
-        minx, maxx = 1000, 1700
         if 'forbidden' in scenario_name:
             expname = "meltdown-forbidden"
         else:
@@ -45,7 +44,6 @@ if __name__ == '__main__':
 
     else:
         simtime = 2000
-        minx, maxx = 400, 750
         expname = "spectre"
         if 'nofdiv' in scenario_name:
             expname = 'spectre-nofdiv'
@@ -71,12 +69,11 @@ if __name__ == '__main__':
         "design_name"     : design_name,
         "simtime"         : simtime,
         "instrumentation" : InstrumentationMethod.CELLIFT,
-        "minx":             minx,
-        "maxx":             maxx,
-        "expname":          expname
+        "expname":          expname,
+        "picktaint":        True
     }
 
-    jobs.append(PlotCountElems(**run_params))
+    jobs.append(SignalsMatrixListJSON(**run_params))
   luigi.build(jobs, workers=num_workers, local_scheduler=True, log_level='INFO')
 
   for j in jobs:

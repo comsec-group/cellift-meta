@@ -2,8 +2,8 @@
 # Licensed under the General Public License, Version 3.0, see LICENSE for details.
 # SPDX-License-Identifier: GPL-3.0-only
 
-# For a given design, runs a experiment to get the matrix of signal values and their taintedness for JSON output.
-
+# For a given design, runs a experiment to get the number of bits tainted at each cycle,
+# and data values. Save resulting matrix and metadata in a pickle.
 # simulator:         common.enums.Simulator (VERILATOR for instance).
 # taintbits:         list of pairs (addr, taint assignment).
 # binary:            path to the simulation binary.
@@ -11,36 +11,42 @@
 # simtime:           num cycles to run, including lead cycles (for CVA6, for instance).
 # instrumentation:   list of common.enums.InstrumentationMethod.
 
-import ctypes
-import itertools
 import json
-import luigi
-import multiprocessing as mp
-import numpy as np
-import os
 import pickle
+import luigi
+import os
+import numpy
 
+from luigi.util import inherits
+
+from listtaintedelems.luigi.countelems import CountElems
 from common.enums import Simulator, InstrumentationMethod
 from common.params_to_str import taintstr, binarycrc
+from common.vcdsignals import get_taintmatrix, matrix_uniq_cols
 from common.luigi.simulationrun import SimulationRun
-from common.vcdsignals import get_taintmatrix, vcd_timestep
 
-class SignalsMatrixListJSON(luigi.Task):
+import matplotlib.pyplot as plt
+
+#####
+# Luigi task
+#####
+
+class SignalsMatrixList(luigi.Task):
     simulator        = luigi.IntParameter()
     taintbits        = luigi.ListParameter()
     binary           = luigi.Parameter()
     simtime          = luigi.IntParameter()
     design_name      = luigi.Parameter()
     instrumentation  = luigi.ListParameter()
+    expname          = luigi.Parameter()
+    picktaint        = luigi.Parameter()
 
     def __init__(self, *args, **kwargs):
-        super(CountElems, self).__init__(*args, **kwargs)
-        self.experiment_name = "signal-names-taint-values-{}-{}-{}-{}-{}-{}".format(self.simulator, taintstr(self.taintbits), binarycrc(self.binary), self.simtime, self.design_name, self.instrumentation)
-        # This pass is typically used with CellIFT (although compatible with GLIFT as well)
-        assert self.instrumentation not in {InstrumentationMethod.VANILLA, InstrumentationMethod.PASSTHROUGH}
+        super(SignalsMatrixList, self).__init__(*args, **kwargs)
+        self.experiment_name = "signalsmatrixlistpickle-{}-{}-{}-{}-{}-{}".format(self.simulator, taintstr(self.taintbits), binarycrc(self.binary), self.simtime, self.design_name, self.instrumentation)
 
     def output(self):
-        return luigi.LocalTarget('{}/experiments/{}.json'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name), format=luigi.format.Nop)
+        return luigi.LocalTarget('{}/experiments/{}-{}-{}.pickle'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name, self.expname, self.picktaint), format=luigi.format.Nop)
 
     def requires(self):
         return [SimulationRun(simulator=self.simulator, taintbits=self.taintbits, instrumentation=self.instrumentation, binary=self.binary, simtime=self.simtime, design_name=self.design_name, dotrace=True, include_synth_log=True)]
@@ -51,29 +57,62 @@ class SignalsMatrixListJSON(luigi.Task):
         else:
             raise Exception('Did not recognize simulator')
 
-        # Get the required file pointers.
-        pickle_data = [pickle.load(x.open()) for x in self.input()][0]
+        ins = self.input()
+        assert len(ins) == 1
+        infile = pickle.load(ins[0].open())
 
-        taintmatrix, signals_list = get_taintmatrix(pickle_data, pickle_data['synthlog'], self.design_name)
+        print('have: %s' % list(infile))
 
-        # Parallelize finding the affected microelements
-        print("Creating shared matrix...")
-        taintmatrix_transposed = taintmatrix.transpose()
-        shared_taintmatrix = mp.RawArray(ctypes.c_int16, taintmatrix_transposed.size)
-        # Copy the matrix into the shared area
-        shared_taintmatrix_np = np.frombuffer(shared_taintmatrix, np.int16).reshape(taintmatrix_transposed.shape)
-        np.copyto(shared_taintmatrix_np, taintmatrix_transposed)
+        matrix, signals_list = get_taintmatrix(infile, infile['synthlog'], self.design_name, self.picktaint)
+        print('%s matrix size: %s siglist taint: %d' % (self.binary, matrix.shape,len(signals_list)))
 
-        print("Done: Creating shared matrix.")
+        if False:
+            assert len(signals_list_taint) == taintmatrix.shape[0]
+            assert len(signals_list_data) == datamatrix.shape[0]
+            signals_list=signals_list_taint+signals_list_data
+            timelen = min(taintmatrix.shape[1], datamatrix.shape[1])
+            taintmatrix = taintmatrix[:,-timelen:]
+            datamatrix = datamatrix[:,-timelen:]
+            assert taintmatrix.shape[1] == timelen
+            assert datamatrix.shape[1] == timelen
+            matrix=numpy.vstack([taintmatrix,datamatrix])
+            assert matrix.shape[0] == len(signals_list)
+            assert matrix.shape[1] == timelen
+            matrix = matrix.astype('int8')
 
-        worker_params = list(zip(itertools.repeat(taintmatrix.shape[0]), range(0, len(taintmatrix[0]), vcd_timestep)))
-        print("Counting tainted signals...")
-        with mp.Pool(processes=NUM_PROCESSES, initializer=init_worker, initargs=(shared_taintmatrix, )) as pool:
-            tainted_signal_counts = pool.starmap(count_affected_components_worker, worker_params)
-            pool.close()
-            pool.join()
-        print("Done: Counting tainted signals.")
+            print('matrix uncompressed: %s' % (matrix.shape,))
+            matrix=matrix_uniq_cols(matrix)
+            print('matrix compressed: %s' % (matrix.shape,))
 
-        with self.output().temporary_path() as outfile_path:
-            with open(outfile_path, "w") as outfile:
-                json.dump(tainted_signal_counts, outfile)
+        with self.output().temporary_path() as outfile_fn:
+            matrix_fn = outfile_fn + '-matrix'
+            numpy.save(matrix_fn, matrix)
+            print('saving matrix to %s' % matrix_fn)
+            pickle.dump({'meta': infile, 'siglist': signals_list, 'matrix': matrix_fn}, open(outfile_fn, 'wb'))
+
+@inherits(SignalsMatrixList)
+class SignalsMatrixListJSON(luigi.Task):
+
+    def __init__(self, *args, **kwargs):
+        super(SignalsMatrixListJSON, self).__init__(*args, **kwargs)
+        self.experiment_name = "signalsmatrixlistjson-{}-{}-{}-{}-{}-{}-{}".format(self.simulator, taintstr(self.taintbits), binarycrc(self.binary), self.simtime, self.design_name, self.instrumentation, self.picktaint)
+
+    def requires(self):
+        t = self.clone(SignalsMatrixList)
+        return t
+
+    def output(self):
+        return luigi.LocalTarget('{}/experiments/{}-{}-jsondata.json'.format(os.environ["CELLIFT_DATADIR"], self.experiment_name, self.expname), format=luigi.format.Nop)
+
+    def run(self):
+        with self.input().open() as inf:
+            d=pickle.load(inf)
+            matrix=numpy.load(d['matrix'] + '.npy')
+            print('matrix uncompressed: %s' % (matrix.shape,))
+            matrix=matrix_uniq_cols(matrix)
+            print('matrix compressed: %s' % (matrix.shape,))
+            lists = numpy.transpose(matrix).tolist()
+            with self.output().temporary_path() as outfile_fn:
+                json.dump(lists, open(outfile_fn, 'w'), separators=(',', ':'))
+
+

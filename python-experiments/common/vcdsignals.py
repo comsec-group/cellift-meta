@@ -23,6 +23,7 @@ TAINTMARKER          = '_t0' # Taint suffix.
 STATE_ELEMENT_MARKER = '@LIST_STATE_ELEMENT'
 
 INT_TYPE = np.int32
+INT_TYPE8 = np.int32
 
 def is_taintsignal(signame):
     return len(signame) >= len(TAINTMARKER) and signame[-len(TAINTMARKER):] == TAINTMARKER
@@ -229,7 +230,42 @@ def get_taintmatrix(datalump, synthlog, design_name, wanttaint=True):
     # # Finally, reshape to get the right matrix.
     # taintmatrix = np.reshape(taintmatrix_1d, (len(signals_list), -1))
     # print("Done: Reshaping the matrix.")
-    taintmatrix = np.array(taintmatrix_prenp, dtype=INT_TYPE)
+    taintmatrix = np.array(taintmatrix_prenp, dtype=INT_TYPE8)
 
     #signals_list = map(lambda s: s.replace(TAINTMARKER, ''), signals_list) # Remove the taint marker
     return taintmatrix, signals_list
+
+def matrix_uniq_cols(matrix):
+    matrix_f=matrix.astype('int32')
+    matrix_start_late = matrix_f[:,1:]
+    matrix_end_early = matrix_f[:,:-1]
+    matrix_diff=np.absolute(matrix_start_late-matrix_end_early)
+    matrix_diff_abssum=np.sum(matrix_diff,axis=0)
+    zeroes_diff = np.where(matrix_diff_abssum == 0)[0]
+    n=0
+    prev_z=None
+    for z in zeroes_diff:
+        n+=1
+        c1=matrix[:,z]
+        c2=matrix[:,z+1]
+        assert matrix_diff_abssum[z] == 0
+        mn=0
+        if not np.array_equal(c1,c2):
+            print('%d and %d are not equal! fail!' % (z,z+1))
+            raise Exception('not ok')
+        if prev_z != None:
+            while prev_z < z:
+                c1=matrix[:,prev_z]
+                c2=matrix[:,prev_z+1]
+                if np.array_equal(c1,c2) :
+                    print('col %d and %d are also equal! fail!' % (prev_z, prev_z+1))
+                    print('%s, %s' % (c1, c2))
+                    raise Exception('not ok')
+                else:
+#                    print('col %d and %d are not equal! good!' % (prev_z, prev_z+1))
+                    pass
+                prev_z += 1
+        prev_z=z+1
+    matrix=np.delete(matrix,zeroes_diff,axis=1)
+    matrix=matrix.astype('int8')
+    return matrix
