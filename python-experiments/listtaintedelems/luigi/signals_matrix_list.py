@@ -107,12 +107,31 @@ class SignalsMatrixListJSON(luigi.Task):
     def run(self):
         with self.input().open() as inf:
             d=pickle.load(inf)
+            nodes=dict()
+            fullname2id=dict()
+            links=set()
+            nid=0
+            for signame in d['siglist']:
+                parts=signame.split('.')
+                for p in range(len(parts)):
+                    name='.'.join(parts[0:p+1])
+                    if name not in fullname2id:
+                        nodes[nid]=parts[p]
+                        fullname2id[name]=nid
+                        nid+=1
+                    if p > 0:
+                        prev_name='.'.join(parts[0:p])
+                        links.add((fullname2id[prev_name], fullname2id[name]))
+#                print('links: %s' % (links,))
+#                print('nodes: %s' % (nodes,))
             matrix=numpy.load(d['matrix'] + '.npy')
             print('matrix uncompressed: %s' % (matrix.shape,))
             matrix=matrix_uniq_cols(matrix)
             print('matrix compressed: %s' % (matrix.shape,))
-            lists = numpy.transpose(matrix).tolist()
+            json_timematrix = numpy.transpose(matrix).tolist()
+            json_nodes = [{'text': nodes[nid], 'id': nid} for nid in list(nodes)]
+            json_links = [{'source': l[0], 'target': l[1]} for l in links]
             with self.output().temporary_path() as outfile_fn:
-                json.dump(lists, open(outfile_fn, 'w'), separators=(',', ':'))
+                json.dump({'matrix': json_timematrix, 'nodes': json_nodes, 'links': json_links}, open(outfile_fn, 'w'), separators=(',', ':'))
 
 
