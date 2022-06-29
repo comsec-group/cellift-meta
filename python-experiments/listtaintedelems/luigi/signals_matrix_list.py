@@ -16,13 +16,14 @@ import pickle
 import luigi
 import os
 import numpy
+import re
 
 from luigi.util import inherits
 
 from listtaintedelems.luigi.countelems import CountElems
 from common.enums import Simulator, InstrumentationMethod
 from common.params_to_str import taintstr, binarycrc
-from common.vcdsignals import get_taintmatrix, matrix_uniq_cols
+from common.vcdsignals import get_taintmatrix, matrix_uniq_cols, matrix_nonzero_rows
 from common.luigi.simulationrun import SimulationRun
 
 import matplotlib.pyplot as plt
@@ -90,6 +91,14 @@ class SignalsMatrixList(luigi.Task):
             print('saving matrix to %s' % matrix_fn)
             pickle.dump({'meta': infile, 'siglist': signals_list, 'matrix': matrix_fn}, open(outfile_fn, 'wb'))
 
+def reduce_signame(signame):
+    irg=signame
+    signame = re.sub('_t0(\[[0-9:]*\])?', '', signame)
+#    if signame[-3:] == '_t0':
+#        signame = signame[:-3]
+#    print('%s -> %s' % (irg,signame))
+    return signame
+
 @inherits(SignalsMatrixList)
 class SignalsMatrixListJSON(luigi.Task):
 
@@ -111,26 +120,64 @@ class SignalsMatrixListJSON(luigi.Task):
             fullname2id=dict()
             links=set()
             nid=0
-            for signame in d['siglist']:
+
+            siglist=d['siglist']
+            matrix=numpy.load(d['matrix'] + '.npy')
+
+            print('matrix uncompressed: %s' % (matrix.shape,))
+            matrix=matrix_uniq_cols(matrix)
+            print('matrix compressed: %s' % (matrix.shape,))
+
+            matrix,siglist = matrix_nonzero_rows(matrix,siglist)
+
+            print('matrix compressed with only nonzero rows: %s' % (matrix.shape,))
+
+            shortnames=set()
+            node2signo=dict()
+            assert len(siglist) == len(set(siglist))
+            siglist = [reduce_signame(s) for s in siglist]
+            assert len(siglist) == len(set(siglist))
+            for signame in siglist:
+#                signame = reduce_signame(signame)
                 parts=signame.split('.')
+                real_signals_found = 0
                 for p in range(len(parts)):
                     name='.'.join(parts[0:p+1])
                     if name not in fullname2id:
-                        nodes[nid]=parts[p]
+                        shortname=parts[p]
+                        while shortname in shortnames:
+                            shortname+= '_'
+                        assert shortname not in shortnames
+                        shortnames.add(shortname)
+                        nodes[nid]=shortname
                         fullname2id[name]=nid
+                        if name in siglist:
+                            #print('%s: found %s' % (signame, name))
+                            real_signals_found += 1
+                            node2signo[nid] = siglist.index(name)
+                            assert node2signo[nid] >= 0 and node2signo[nid] < len(siglist)
+                            assert len(siglist) == matrix.shape[0]
+                        else:
+                            #print('%s: not found %s' % (signame, name))
+                            node2signo[nid] = -1
                         nid+=1
                     if p > 0:
                         prev_name='.'.join(parts[0:p])
                         links.add((fullname2id[prev_name], fullname2id[name]))
+                if real_signals_found != 1:
+                    print('signal: %s found: %d' % (signame, real_signals_found))
+                assert real_signals_found == 1
 #                print('links: %s' % (links,))
 #                print('nodes: %s' % (nodes,))
-            matrix=numpy.load(d['matrix'] + '.npy')
-            print('matrix uncompressed: %s' % (matrix.shape,))
-            matrix=matrix_uniq_cols(matrix)
-            print('matrix compressed: %s' % (matrix.shape,))
+
+            shortnames = {nodes[nid] for nid in nodes}
+            assert len(nodes) == len(set(shortnames))
+            assert sorted([node2signo[nid] for nid in list(nodes) if node2signo[nid] >= 0]) == list(range(len(siglist)))
+
             json_timematrix = numpy.transpose(matrix).tolist()
-            json_nodes = [{'text': nodes[nid], 'id': nid} for nid in list(nodes)]
-            json_links = [{'source': l[0], 'target': l[1]} for l in links]
+            print('matrix size for %s: %s' % (self.experiment_name, matrix.shape))
+            json_nodes = [{'text': nodes[nid], 'id': nodes[nid], 'nid': nid, 'sigid': node2signo[nid] } for nid in list(nodes)]
+            json_links = [{'source': nodes[l[0]], 'target': nodes[l[1]]} for l in links]
             with self.output().temporary_path() as outfile_fn:
                 json.dump({'matrix': json_timematrix, 'nodes': json_nodes, 'links': json_links}, open(outfile_fn, 'w'), separators=(',', ':'))
 

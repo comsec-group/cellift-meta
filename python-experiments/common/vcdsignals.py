@@ -269,3 +269,17 @@ def matrix_uniq_cols(matrix):
     matrix=np.delete(matrix,zeroes_diff,axis=1)
     matrix=matrix.astype('int8')
     return matrix
+
+def matrix_nonzero_rows(matrix, siglist):
+    matrix_abssum=np.sum(np.absolute(matrix),axis=1)
+    nonzero_rows = np.where(matrix_abssum != 0)[0]
+#    print('matrix shape: %s nonzero rows shape: %s' % (matrix_abssum.shape, nonzero_rows.shape))
+    assert matrix.shape[0] == len(siglist)
+#    print('nonzero rows: %s' % (nonzero_rows,))
+    siglist = [siglist[k] for k in nonzero_rows]
+    matrix = matrix[nonzero_rows, :]
+    print('new matrix shape: %s' % (matrix.shape,))
+    print('new matrix: %s' % (matrix,))
+    assert matrix.shape[0] == len(siglist)
+#    print('new signals:\n%s\n' % '\n'.join(siglist))
+    return matrix, siglist

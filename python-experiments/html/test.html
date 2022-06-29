@@ -24,6 +24,38 @@
       height: 30px;
     }
 
+    #back-button {
+      position: absolute;
+      top: 140px;
+      left: 150px;
+      background: #f08080;
+      padding-right: 26px;
+      border-radius: 3px;
+      border: none;
+      color: white;
+      margin: 0;
+      padding: 0 12px;
+      width: 60px;
+      cursor: pointer;
+      height: 30px;
+    }
+
+    #step-button {
+      position: absolute;
+      top: 140px;
+      left: 250px;
+      background: #f08080;
+      padding-right: 26px;
+      border-radius: 3px;
+      border: none;
+      color: white;
+      margin: 0;
+      padding: 0 12px;
+      width: 60px;
+      cursor: pointer;
+      height: 30px;
+    }
+
     #play-button:hover {
       background-color: #696969;
     }    
@@ -82,32 +114,47 @@ text {
 
 <div id="vis">
   <button id="play-button">Play</button>
+  <button id="back-button">Back</button>
+  <button id="step-button">Step</button>
+
+ <label for="traces">Visualize execution trace:</label>
+ <select name="traces" id="traces">
+ <option value="meltdown-forbidden">BOOMv2 Forbidden Load</option>
+ <option value="spectre-nofdiv">Spectre without fdiv</option>
+ </select> 
+
 </div>
 
-<svg width="960" height="600"></svg>
+<svg width="1500" height="1200"></svg>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
 
 var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height");
+    svg_width = +svg.attr("width"),
+    svg_height = +svg.attr("height");
 
 var color = d3.scaleOrdinal(d3.schemeCategory20);
 
 var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }))
     .force("charge", d3.forceManyBody())
-    .force("center", d3.forceCenter(width / 2, height / 2));
+    .force("center", d3.forceCenter(svg_width / 2, svg_height / 2));
 
 
 ////////// slider //////////
 
-var moving = false;
+var margin = {top:50, right:50, bottom:0, left:50},
+    slider_width = svg_width - margin.left - margin.right,
+    slider_height = svg_height - margin.top - margin.bottom;
+
+var slider_moving = false;
 var currentValue = 0;
-var targetValue = width;
+var targetValue = slider_width;
 
 var playButton = d3.select("#play-button");
+var stepButton = d3.select("#step-button");
+var backButton = d3.select("#back-button");
 
 var formatDateIntoYear = d3.timeFormat("%Y");
 var formatDate = d3.timeFormat("%b %Y");
@@ -116,58 +163,107 @@ var parseDate = d3.timeParse("%m/%d/%y");
 var startDate = new Date("2004-11-01"),
     endDate = new Date("2017-04-01");
 
-var margin = {top:50, right:50, bottom:0, left:50},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
 var slider = svg.append("g")
     .attr("class", "slider")
-    .attr("transform", "translate(" + margin.left + "," + height/5 + ")");
+    .attr("transform", "translate(" + margin.left + "," + slider_height/5 + ")");
 
-var playButton = d3.select("#play-button");
+var x;
 
-var x = d3.scaleTime()
+function set_targetvalue(t) {
+	targetValue = t;
+x = d3.scaleTime()
     .domain([startDate, endDate])
     .range([0, targetValue])
     .clamp(true);
+  frameupdate(currentValue, x.invert(currentValue));
+}
 
-function frameupdate(h) {
+var circles = 0;
+
+var frame_dataset = 0;
+
+set_targetvalue(slider_width);
+
+function frameupdate(f, h) {
   // update position and text of label according to slider scale
+  if(frame_dataset == 0 || circles == 0) return;
+  cycle = f;
+  if(cycle < 0) cycle = 0;
+  if(cycle >= frame_dataset.length) cycle = frame_dataset.length-1;
+  var this_frame = frame_dataset[cycle];
+  console.log('frame_dataset: ' + this_frame + ' frame cycle: ' + cycle + ' / ' + frame_dataset.length);
+	circles.attr("fill", function(d) {
+			sigid = d.sigid;
+			if(sigid < 0) { return color(1); }
+			tv = this_frame[sigid];
+			if(tv == 0) {  return color(0); } 
+		        cn = 2 + (tv % 17);
+			return color(cn);
+		}
+  	).
+		attr("r", function(d) { if(d.sigid < 0) return 3; if(this_frame[d.sigid] > 0) { return 12; } else { return 6; } } )
+	;
   handle.attr("cx", x(h));
   label
     .attr("x", x(h))
-    .text(formatDate(h));
+    .text(f);
 }
 
-
 function step() {
-  frameupdate(x.invert(currentValue));
-  currentValue = currentValue + (targetValue/151);
-    console.log("value: " + currentValue);
-  if (currentValue > targetValue) {
-    moving = false;
+  if(frame_dataset == 0) return;
+  currentValue = currentValue + 1;
+  frameupdate(currentValue, x.invert(currentValue));
+//    console.log("value: " + currentValue);
+  if (currentValue > targetValue || currentValue < 0) {
+	  if(slider_moving) {
+	    slider_moving = false;
+	    clearInterval(timer);
+	  }
     currentValue = 0;
-    clearInterval(timer);
+    frameupdate(currentValue, x.invert(currentValue));
     // timer = 0;
     playButton.text("Play");
-    console.log("Slider moving: " + moving);
+    stepButton.text("Step");
+    console.log("Slider moving: " + slider_moving);
   }
 }
 
 playButton.on("click", function() {
     var button = d3.select(this);
     if (button.text() == "Pause") {
-      moving = false;
+      slider_moving = false;
       clearInterval(timer);
       // timer = 0;
       button.text("Play");
     } else {
-      moving = true;
-      timer = setInterval(step, 100);
+      slider_moving = true;
+      timer = setInterval(step, 200);
       button.text("Pause");
     }
-    console.log("Slider moving: " + moving);
+    console.log("Slider moving: " + slider_moving);
   });
+
+
+stepButton.on("click", function() {
+    var button = d3.select(this);
+
+    if(slider_moving) {
+	    slider_moving = false;
+      	    clearInterval(timer);
+   }
+   step();
+});
+
+backButton.on("click", function() {
+    var button = d3.select(this);
+
+    if(slider_moving) {
+	    slider_moving = false;
+      	    clearInterval(timer);
+   }
+   currentValue -= 2; // XXX hack to re-use step()
+   step();
+});
 
 slider.append("line")
     .attr("class", "track")
@@ -181,7 +277,9 @@ slider.append("line")
         .on("start.interrupt", function() { slider.interrupt(); })
         .on("start drag", function() {
           currentValue = d3.event.x;
-//          update(x.invert(currentValue)); 
+	  if(currentValue < 0) currentValue = 0;
+	  if(currentValue > targetValue) currentValue = targetValue;
+          frameupdate(currentValue, x.invert(currentValue)); 
         })
     );
 
@@ -195,7 +293,7 @@ slider.insert("g", ".track-overlay")
     .attr("x", x)
     .attr("y", 10)
     .attr("text-anchor", "middle")
-    .text(function(d) { return formatDateIntoYear(d); });
+    .text(function(d) { return " " + Math.trunc(x(d)); });
 
 var handle = slider.insert("circle", ".track-overlay")
     .attr("class", "handle")
@@ -204,20 +302,25 @@ var handle = slider.insert("circle", ".track-overlay")
 var label = slider.append("text")  
     .attr("class", "label")
     .attr("text-anchor", "middle")
-    .text(formatDate(startDate))
+    .text("0")
     .attr("transform", "translate(0," + (-25) + ")")
 
 ///////////
 
-d3.json("miserables.json", function(error, graph) {
+var hash = window.location.hash.substr(1);
+
+d3.json("big.json", function(error, graph) {
   if (error) throw error;
+
+	frame_dataset = graph['matrix'];
+
 
   var link = svg.append("g")
       .attr("class", "links")
     .selectAll("line")
     .data(graph.links)
-    .enter().append("line")
-      .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+    .enter().append("line");
+//      .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
 
   var node = svg.append("g")
       .attr("class", "nodes")
@@ -225,9 +328,12 @@ d3.json("miserables.json", function(error, graph) {
     .data(graph.nodes)
     .enter().append("g")
 
-  var circles = node.append("circle")
+  circles = node.append("circle")
     .attr("r", 5)
-    .attr("fill", function(d) { return color(d.group); });
+    .attr("fill", function(d) { return color(0); });
+
+set_targetvalue(frame_dataset.length);
+
 
   // Create a drag handler and append it to the node object instead
   var drag_handler = d3.drag()
@@ -268,31 +374,6 @@ groupno=1;
           return "translate(" + d.x + "," + d.y + ")";
         })
   }
-
-        var step = -1;
-        function nextval()
-        {
-            step++;
-            return 2000 + (1500*step); // initial time, wait time
-        }
-
-
-	function setgroup(gn) {
-		circles.attr("fill", color(gn))
-	}
-
-        setTimeout(function() {
-		setgroup(2);
-        }, nextval());
-
-        setTimeout(function() {
-		setgroup(3);
-        }, nextval());
-
-        setTimeout(function() {
-		setgroup(1);
-        }, nextval());
-
 
 });
 

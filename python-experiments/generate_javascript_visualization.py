@@ -23,9 +23,9 @@ process_division_factor = 4
 if __name__ == '__main__':
   jobs=[]
   for scenario_name in ["scenario_1_load_tainted_data_forbidden",
-#          "scenario_1_load_tainted_data_ok",
-#          "boom_attacks_v1",
-#          "boom_attacks_v1_nofdiv",
+          "scenario_1_load_tainted_data_ok",
+          "boom_attacks_v1",
+          "boom_attacks_v1_nofdiv",
           ]:
     num_workers = (multiprocessing.cpu_count()+process_division_factor)//process_division_factor
 
