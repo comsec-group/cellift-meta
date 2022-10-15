@@ -32,7 +32,7 @@ $(PREFIX_CELLIFT)/bin/stack:
 	sh stack/gethaskellstack.sh -d $(PREFIX_CELLIFT)/bin
 
 install_yosys:
-	( cd cellift-yosys && make PREFIX=$(PREFIX_CELLIFT) -j$(CELLIFT_JOBS) && make PREFIX=$(PREFIX_CELLIFT) install ) >$(LOGFILES)/yosys.log 2>&1
+	( cd cellift-yosys && make config-gcc && make PREFIX=$(PREFIX_CELLIFT) -j$(CELLIFT_JOBS) && make PREFIX=$(PREFIX_CELLIFT) install ) >$(LOGFILES)/yosys.log 2>&1
 
 install_rust: $(RUSTEXEC)
 
