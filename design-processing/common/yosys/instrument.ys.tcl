@@ -44,7 +44,7 @@ if { [string equal $INSTRUMENTATION "glift"] || [string equal $INSTRUMENTATION "
 
     yosys opt -purge
     yosys timestamp opt
-    yosys cellift -exclude-signals clk_i,rst_ni,clock,reset,reset_wire_reset -imprecise-shl-sshl -imprecise-shr-sshr -verbose
+    yosys cellift -exclude-signals clk_i,rst_ni,clock,reset,reset_wire_reset,g_clk,g_resetn,resetn,rstz,vdd,vd,gnd,gd,vcs,vc,RW0_clk,taint_meta_reset,meta_reset,metareset -imprecise-shl-sshl -imprecise-shr-sshr -verbose
     if {[string equal $INSTRUMENTATION "glift"]} {
         yosys breakdown_glift -exclude-mux
     }
