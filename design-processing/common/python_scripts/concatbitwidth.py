@@ -13,7 +13,7 @@
 import re
 
 SIGNAL_SLICE_REGEXP = r"\[\s*(\d+)\s*:\s*(\d+)\s*\]"
-SIGNAL_DECLARATION_PREFIX = r"(?:wire|reg|logic|input|output)\s*(?:\[\s*(\d+)\s*:\s*(\d+)\s*\])?\s*"
+SIGNAL_DECLARATION = r"^\s*(?:wire|reg|logic|input|output)\s*(?:\[\s*(\d+)\s*:\s*(\d+)\s*\])?\s*([a-zA-Z0-9_]+)\s*;"
 FORBIDDEN_CHARACTERS = r"+-*/=<>{}"
 
 # @param The bracket content, deprived of its surrounding curly brackets.
@@ -27,9 +27,32 @@ def get_bracket_bit_width(bracket_content, all_lines, curr_line_number):
     # Quickly check that there is no nested expression or concatenation.
     for forbidden_character in FORBIDDEN_CHARACTERS:
         if forbidden_character in bracket_content:
-            raise ValueError("Unexpected character in concatenation bracket content: {}".format(forbidden_character))
+            raise ValueError("Unexpected character in concatenation bracket content: {}. Bracket content: `{}`. Line number: `{}`.".format(forbidden_character, bracket_content, curr_line_number))
 
     bracket_width = 0
+
+    ###
+    # Pre-find all signal declarations
+    ###
+
+    # Finding signal declarations in 2 phases: first find the last declaration lines, then find the signal width
+    signal_declaration_lines = dict() # Tuples (range high, range low if range high is not None). Only intermediate, not supposed to be used except to compute signal_widths.
+    signal_declaration_regexp = re.compile(SIGNAL_DECLARATION)
+    for search_line_id in range(curr_line_number):
+        curr_match = re.match(signal_declaration_regexp, all_lines[search_line_id])
+        if curr_match:
+            signal_declaration_lines[curr_match.groups()[-1]] = curr_match.groups()[:-1]
+    # Find the signal width
+    signal_widths = dict() # signal_widths[signal_name] = width (bits)
+    for signal_name, curr_groups in signal_declaration_lines.items():
+        range_high = curr_groups[0]
+        # If this is a single-bit declaration without square brackets.
+        if range_high is None:
+            signal_widths[signal_name] = 1
+        else:
+            range_low = curr_groups[1]
+            signal_widths[signal_name] = int(range_high) - int(range_low) + 1
+
     # Compute the bracket bit width elementwise.
     for bracket_element in bracket_content.split(","):
         bracket_element = bracket_element.strip()
@@ -46,43 +69,39 @@ def get_bracket_bit_width(bracket_content, all_lines, curr_line_number):
         # (b) If this element is slice of some signal.
         elif "[" in bracket_element:
             # If this a single bit selection.
-            if ":" not in bracket_element:
+            index_col = bracket_element.find(':')
+            if index_col == -1:
                 bracket_width += 1
                 continue
             # Else, it is a range.
-            search_result = re.search(SIGNAL_SLICE_REGEXP, bracket_element)
-            if search_result is None:
-                raise ValueError("Error when processing curly bracket token when assessing the concatenation bit width: {}".format(bracket_element))
-            range_high = search_result.group(1)
-            range_low = search_result.group(2)
-            assert range_high is not None and range_low is not None
+            # Regexes are too expensive
+            # search_result = re.search(SIGNAL_SLICE_REGEXP, bracket_element)
+            # if search_result is None:
+            #     raise ValueError("Error when processing curly bracket token when assessing the concatenation bit width: {}".format(bracket_element))
+            # range_high = search_result.group(1)
+            # range_low = search_result.group(2)
+            # assert range_high is not None and range_low is not None
+            index_brackopen  = bracket_element.index('[')
+            index_brackclose = bracket_element.index(']')
+
+            # If the colon is not between the brackets, then this is not a slice.
+            if index_col < index_brackopen or index_col > index_brackclose:
+                bracket_width += 1
+                continue
+
+            range_high = bracket_element[index_brackopen+1:index_col]
+            range_low  = bracket_element[index_col+1:index_brackclose]
             bracket_width += int(range_high) - int(range_low) + 1
+            if int(range_high) - int(range_low) + 1 < 1:
+                raise ValueError(f"Err: Found width {int(range_high) - int(range_low) + 1} for bracket elem {bracket_element}. Range high: {range_high}, range low: {range_low}.")
             continue
 
         # (c) If this element is a pre-declared signal.
         else:
-            # First, check in the cache to accelerate lookups.
-            if bracket_element in bracket_signal_cache:
-                bracket_width += bracket_signal_cache[bracket_element]
-                continue
-
-            signal_decl_regexp = SIGNAL_DECLARATION_PREFIX + bracket_element + r"\s*;"
-            regexp = re.compile(signal_decl_regexp)
-
-            # Find the signal declaration in the preceding lines.
-            for search_line_id in range(curr_line_number-1, -1, -1):
-                search_result = regexp.search(all_lines[search_line_id])
-                # If this line corresponds to the right declaration.
-                if search_result:
-                    range_high = search_result.group(1)
-                    # If this is a single-bit declaration without square brackets.
-                    if range_high is None:
-                        curr_elem_width = 1
-                    else:
-                        range_low = search_result.group(2)
-                        curr_elem_width = int(range_high) - int(range_low) + 1
-                    bracket_signal_cache[bracket_element] = curr_elem_width
-                    bracket_width += curr_elem_width
-                    break
+            if bracket_element in signal_widths:
+                bracket_width += signal_widths[bracket_element]
+            else:
+                # In case it was not found 
+                bracket_width += 1
 
     return bracket_width
