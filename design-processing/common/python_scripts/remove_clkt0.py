@@ -9,8 +9,6 @@ import sys
 # sys.argv[1]: source file path.
 # sys.argv[2]: target file path.
 
-ATTRIBUTE_REGEX = r"\(\*[^\n]+\*\)"
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Takes 2 arguments: the Verilog source file path, the Verilog target file path.")
