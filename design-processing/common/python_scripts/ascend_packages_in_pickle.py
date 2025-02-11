@@ -10,7 +10,7 @@ import sys
 # sys.argv[1]: source pickle Verilog file
 # sys.argv[2]: destination pickle Verilog file
 
-REGEX = r"package(?:.|\n)+?endpackage"
+REGEX = r"^\s*package(?:.|\n)+?endpackage"
 
 if __name__ == "__main__":
     src_filename = sys.argv[1]
